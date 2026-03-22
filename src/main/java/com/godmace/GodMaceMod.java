@@ -1,12 +1,15 @@
 package com.godmace;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -15,6 +18,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,16 +32,35 @@ public class GodMaceMod implements ModInitializer {
 
     private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
-    // Exact Lunge III value from game data: base 0.458 + 0.458 per level above first
-    // Level 3 = 0.458 + (2 * 0.458) = 1.374
     private static final double LUNGE_POWER = 1.374;
-    // Sprint speed added on top like vanilla (player is always sprinting when lunging)
     private static final double SPRINT_BOOST = 0.28;
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
 
     @Override
     public void onInitialize() {
+
+        // ── /godmace command ──
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(
+                CommandManager.literal("godmace")
+                    .requires(source -> source.hasPermissionLevel(2)) // OP only
+                    .executes(context -> {
+                        ServerCommandSource source = context.getSource();
+                        ServerPlayerEntity player = source.getPlayer();
+                        if (player == null) return 0;
+
+                        // Run the give command on behalf of the player
+                        source.getServer().getCommandManager().executeWithPrefix(
+                            source.getServer().getCommandSource(),
+                            "/give " + player.getName().getString() + " minecraft:mace[minecraft:unbreakable={value:1},minecraft:item_model='minecraft:item/mace/godmace',custom_name={\"text\":\"GOD MACE\",\"color\":\"yellow\",\"bold\":true,\"italic\":false},enchantments={\"minecraft:density\":5,\"minecraft:breach\":4,\"minecraft:wind_burst\":3,\"minecraft:mending\":1,\"minecraft:unbreaking\":3,\"minecraft:fire_aspect\":2}] 1"
+                        );
+
+                        player.sendMessage(Text.literal("§6You have been given the §eGOD MACE§6!"), false);
+                        return 1;
+                    })
+            );
+        });
 
         // ── Action bar display ──
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -87,9 +112,6 @@ public class GodMaceMod implements ModInitializer {
 
             cooldowns.put(uuid, now);
 
-            // Exact Lunge III: coordinate_scale [1,0,1] means X and Z of look vector
-            // Y is untouched. Magnitude 1.374 added to existing velocity.
-            // Extra sprint boost added since vanilla Lunge is always used while sprinting.
             Vec3d look = player.getRotationVec(1.0f);
             Vec3d current = player.getVelocity();
             double totalPower = LUNGE_POWER + SPRINT_BOOST;
