@@ -41,16 +41,24 @@ public class GodMaceMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                 CommandManager.literal("godmace")
-                    .requires(source -> source.hasPermission(2))
+                    .requires(source -> {
+                        ServerPlayerEntity p = source.getPlayer();
+                        return p != null && source.getServer().getPlayerManager().isOperator(p.getGameProfile());
+                    })
                     .executes(context -> {
                         ServerCommandSource source = context.getSource();
                         ServerPlayerEntity player = source.getPlayer();
                         if (player == null) return 0;
 
-                        source.getServer().getCommandManager().executeWithPrefix(
-                            source.withSilent(),
-                            "give " + player.getName().getString() + " minecraft:mace[minecraft:unbreakable={value:1},minecraft:item_model='minecraft:item/mace/godmace',custom_name={\"text\":\"GOD MACE\",\"color\":\"yellow\",\"bold\":true,\"italic\":false},enchantments={\"minecraft:density\":5,\"minecraft:breach\":4,\"minecraft:wind_burst\":3,\"minecraft:mending\":1,\"minecraft:unbreaking\":3,\"minecraft:fire_aspect\":2}] 1"
-                        );
+                        try {
+                            source.getServer().getCommandManager().getDispatcher().execute(
+                                "give " + player.getName().getString() + " minecraft:mace[minecraft:unbreakable={value:1},minecraft:item_model='minecraft:item/mace/godmace',custom_name={\"text\":\"GOD MACE\",\"color\":\"yellow\",\"bold\":true,\"italic\":false},enchantments={\"minecraft:density\":5,\"minecraft:breach\":4,\"minecraft:wind_burst\":3,\"minecraft:mending\":1,\"minecraft:unbreaking\":3,\"minecraft:fire_aspect\":2}] 1",
+                                source.getServer().getCommandSource()
+                            );
+                        } catch (Exception e) {
+                            player.sendMessage(Text.literal("§cFailed to give God Mace!"), false);
+                            return 0;
+                        }
 
                         player.sendMessage(Text.literal("§6You have been given the §eGOD MACE§6!"), false);
                         return 1;
