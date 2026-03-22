@@ -40,7 +40,7 @@ public class GodMaceMod implements ModInitializer {
                 ItemStack stack = player.getMainHandStack();
                 if (!isGodMace(stack)) continue;
 
-                long now = player.getWorld().getTime();
+                long now = player.getOverworld().getTime();
                 UUID uuid = player.getUuid();
 
                 if (cooldowns.containsKey(uuid)) {
