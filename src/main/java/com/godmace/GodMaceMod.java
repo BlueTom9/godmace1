@@ -41,10 +41,7 @@ public class GodMaceMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                 CommandManager.literal("godmace")
-                    .requires(source -> {
-                        ServerPlayerEntity p = source.getPlayer();
-                        return p != null && p.hasPermissionLevel(2);
-                    })
+                    .requires(source -> source.hasPermissionLevel(2))
                     .executes(context -> {
                         ServerCommandSource source = context.getSource();
                         ServerPlayerEntity player = source.getPlayer();
