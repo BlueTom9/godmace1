@@ -26,7 +26,7 @@ public class GodMaceMod implements ModInitializer {
 
     private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
-    private static final double DASH_HORIZONTAL = 1.2;
+    private static final double DASH_HORIZONTAL = 1.8;
     private static final double DASH_VERTICAL = 0.4;
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
