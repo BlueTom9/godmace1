@@ -2,17 +2,17 @@ package com.godmace;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +22,7 @@ public class GodMaceMod implements ModInitializer {
 
     public static final String MOD_ID = "godmace";
 
-    private static final ResourceLocation GOD_MACE_MODEL =
-        ResourceLocation.fromNamespaceAndPath("minecraft", "item/mace/godmace");
+    private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
     private static final double DASH_HORIZONTAL = 2.8;
     private static final double DASH_VERTICAL = 0.4;
@@ -33,62 +32,61 @@ public class GodMaceMod implements ModInitializer {
     @Override
     public void onInitialize() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (world.isClientSide())
-                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            if (world.isClient()) return ActionResult.PASS;
 
-            ItemStack stack = player.getItemInHand(hand);
-            if (!isGodMace(stack))
-                return InteractionResultHolder.pass(stack);
+            ItemStack stack = player.getStackInHand(hand);
+            if (!isGodMace(stack)) return ActionResult.PASS;
 
-            ServerPlayer serverPlayer = (ServerPlayer) player;
-            long now = world.getGameTime();
-            UUID uuid = player.getUUID();
+            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+            long now = world.getTime();
+            UUID uuid = player.getUuid();
 
             if (cooldowns.containsKey(uuid)) {
                 long elapsed = now - cooldowns.get(uuid);
                 if (elapsed < COOLDOWN_TICKS) {
                     float remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
-                    serverPlayer.displayClientMessage(
-                        Component.literal("§cDash on cooldown! §e" + String.format("%.1f", remainingSec) + "s"),
+                    serverPlayer.sendMessage(
+                        Text.literal("§cDash on cooldown! §e" + String.format("%.1f", remainingSec) + "s"),
                         true
                     );
-                    return InteractionResultHolder.fail(stack);
+                    return ActionResult.FAIL;
                 }
             }
 
             cooldowns.put(uuid, now);
 
-            Vec3 look = player.getLookAngle();
-            player.setDeltaMovement(
+            Vec3d look = player.getRotationVec(1.0f);
+            player.setVelocity(
                 look.x * DASH_HORIZONTAL,
                 Math.max(look.y * DASH_HORIZONTAL, DASH_VERTICAL),
                 look.z * DASH_HORIZONTAL
             );
-            player.hurtMarked = true;
+            player.velocityModified = true;
 
-            ServerLevel level = (ServerLevel) world;
+            ServerWorld serverWorld = (ServerWorld) world;
 
-            level.sendParticles(ParticleTypes.CLOUD,
+            serverWorld.spawnParticles(ParticleTypes.CLOUD,
                 player.getX(), player.getY() + 0.5, player.getZ(),
-                20, 0.4, 0.4, 0.4, 0.05);
+                25, 0.4, 0.4, 0.4, 0.05);
 
-            level.sendParticles(ParticleTypes.POOF,
+            serverWorld.spawnParticles(ParticleTypes.POOF,
                 player.getX(), player.getY() + 0.5, player.getZ(),
                 10, 0.3, 0.3, 0.3, 0.1);
 
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WIND_CHARGE_THROW, SoundSource.PLAYERS, 1.0f, 1.0f);
+            serverWorld.playSound(null,
+                player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ENTITY_WIND_CHARGE_WIND_BURST,
+                SoundCategory.PLAYERS, 1.0f, 1.0f);
 
-            serverPlayer.displayClientMessage(
-                Component.literal("§6⚡ God Dash!"), true);
+            serverPlayer.sendMessage(Text.literal("§6⚡ God Dash!"), true);
 
-            return InteractionResultHolder.success(stack);
+            return ActionResult.SUCCESS;
         });
     }
 
     private boolean isGodMace(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        var model = stack.get(DataComponents.ITEM_MODEL);
-        return model != null && GOD_MACE_MODEL.equals(model);
+        Identifier model = stack.get(DataComponentTypes.ITEM_MODEL);
+        return GOD_MACE_MODEL.equals(model);
     }
 }
