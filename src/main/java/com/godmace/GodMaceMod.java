@@ -61,7 +61,7 @@ public class GodMaceMod implements ModInitializer {
                 Math.max(look.y * DASH_HORIZONTAL, DASH_VERTICAL),
                 look.z * DASH_HORIZONTAL
             );
-            player.velocityModified = true;
+            player.velocityDirty = true;
 
             ServerWorld serverWorld = (ServerWorld) world;
 
