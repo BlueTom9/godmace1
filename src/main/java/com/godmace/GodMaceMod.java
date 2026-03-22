@@ -26,7 +26,7 @@ public class GodMaceMod implements ModInitializer {
 
     private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
-    private static final double DASH_HORIZONTAL = 2.8;
+    private static final double DASH_HORIZONTAL = 1.2;
     private static final double DASH_VERTICAL = 0.4;
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
@@ -34,28 +34,36 @@ public class GodMaceMod implements ModInitializer {
     @Override
     public void onInitialize() {
 
-        // ── Always show action bar while holding god mace ──
+        // ── Action bar display ──
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                ItemStack stack = player.getMainHandStack();
-                if (!isGodMace(stack)) continue;
-
                 long now = server.getOverworld().getTime();
                 UUID uuid = player.getUuid();
+
+                boolean onCooldown = false;
+                float remainingSec = 0f;
 
                 if (cooldowns.containsKey(uuid)) {
                     long elapsed = now - cooldowns.get(uuid);
                     if (elapsed < COOLDOWN_TICKS) {
-                        float remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
-                        player.sendMessage(
-                            Text.literal("§6⚡ God Dash §c" + String.format("%.1f", remainingSec) + "s"),
-                            true
-                        );
-                        continue;
+                        onCooldown = true;
+                        remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
                     }
                 }
-                // Ready!
-                player.sendMessage(Text.literal("§6⚡ God Dash §aREADY"), true);
+
+                boolean holdingMace = isGodMace(player.getMainHandStack());
+
+                if (onCooldown) {
+                    // Always show countdown whether holding mace or not
+                    player.sendMessage(
+                        Text.literal("§6⚡ God Dash §c" + String.format("%.1f", remainingSec) + "s"),
+                        true
+                    );
+                } else if (holdingMace) {
+                    // Only show READY if holding the mace
+                    player.sendMessage(Text.literal("§6⚡ God Dash §aREADY"), true);
+                }
+                // If not holding mace and no cooldown, show nothing
             }
         });
 
@@ -79,7 +87,6 @@ public class GodMaceMod implements ModInitializer {
 
             cooldowns.put(uuid, now);
 
-            // Dash
             Vec3d look = player.getRotationVec(1.0f);
             player.setVelocity(
                 look.x * DASH_HORIZONTAL,
@@ -88,7 +95,6 @@ public class GodMaceMod implements ModInitializer {
             );
             player.velocityDirty = true;
 
-            // Send velocity to client so it actually moves
             serverPlayer.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player));
 
             ServerWorld serverWorld = (ServerWorld) world;
@@ -105,8 +111,6 @@ public class GodMaceMod implements ModInitializer {
                 player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ENTITY_WIND_CHARGE_WIND_BURST,
                 SoundCategory.PLAYERS, 1.0f, 1.0f);
-
-            serverPlayer.sendMessage(Text.literal("§6⚡ God Dash!"), true);
 
             return ActionResult.SUCCESS;
         });
