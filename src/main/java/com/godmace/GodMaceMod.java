@@ -77,7 +77,7 @@ public class GodMaceMod implements ModInitializer {
                 10, 0.3, 0.3, 0.3, 0.1);
 
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WIND_CHARGE_BURST, SoundSource.PLAYERS, 1.0f, 1.0f);
+                SoundEvents.WIND_CHARGE_THROW, SoundSource.PLAYERS, 1.0f, 1.0f);
 
             serverPlayer.displayClientMessage(
                 Component.literal("§6⚡ God Dash!"), true);
@@ -88,7 +88,7 @@ public class GodMaceMod implements ModInitializer {
 
     private boolean isGodMace(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        ResourceLocation model = stack.get(DataComponents.ITEM_MODEL);
-        return GOD_MACE_MODEL.equals(model);
+        var model = stack.get(DataComponents.ITEM_MODEL);
+        return model != null && GOD_MACE_MODEL.equals(model);
     }
 }
