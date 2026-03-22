@@ -22,7 +22,8 @@ public class GodMaceMod implements ModInitializer {
 
     public static final String MOD_ID = "godmace";
 
-    private static final ResourceLocation GOD_MACE_MODEL = ResourceLocation.fromNamespaceAndPath("minecraft", "item/mace/godmace");
+    private static final ResourceLocation GOD_MACE_MODEL =
+        ResourceLocation.fromNamespaceAndPath("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
     private static final double DASH_HORIZONTAL = 2.8;
     private static final double DASH_VERTICAL = 0.4;
@@ -32,10 +33,12 @@ public class GodMaceMod implements ModInitializer {
     @Override
     public void onInitialize() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (world.isClientSide()) return InteractionResultHolder.pass(player.getItemInHand(hand));
+            if (world.isClientSide())
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
 
             ItemStack stack = player.getItemInHand(hand);
-            if (!isGodMace(stack)) return InteractionResultHolder.pass(stack);
+            if (!isGodMace(stack))
+                return InteractionResultHolder.pass(stack);
 
             ServerPlayer serverPlayer = (ServerPlayer) player;
             long now = world.getGameTime();
@@ -44,8 +47,7 @@ public class GodMaceMod implements ModInitializer {
             if (cooldowns.containsKey(uuid)) {
                 long elapsed = now - cooldowns.get(uuid);
                 if (elapsed < COOLDOWN_TICKS) {
-                    long remainingTicks = COOLDOWN_TICKS - elapsed;
-                    float remainingSec = remainingTicks / 20f;
+                    float remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
                     serverPlayer.displayClientMessage(
                         Component.literal("§cDash on cooldown! §e" + String.format("%.1f", remainingSec) + "s"),
                         true
@@ -68,19 +70,17 @@ public class GodMaceMod implements ModInitializer {
 
             level.sendParticles(ParticleTypes.CLOUD,
                 player.getX(), player.getY() + 0.5, player.getZ(),
-                25, 0.4, 0.4, 0.4, 0.05);
+                20, 0.4, 0.4, 0.4, 0.05);
 
-            level.sendParticles(ParticleTypes.SWEEP_ATTACK,
-                player.getX(), player.getY() + 1.0, player.getZ(),
-                5, 0.3, 0.3, 0.3, 0.0);
-
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BREEZE_WIND_BURST, SoundSource.PLAYERS, 1.0f, 1.1f);
+            level.sendParticles(ParticleTypes.POOF,
+                player.getX(), player.getY() + 0.5, player.getZ(),
+                10, 0.3, 0.3, 0.3, 0.1);
 
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 0.8f, 1.4f);
+                SoundEvents.WIND_CHARGE_BURST, SoundSource.PLAYERS, 1.0f, 1.0f);
 
-            serverPlayer.displayClientMessage(Component.literal("§6⚡ God Dash!"), true);
+            serverPlayer.displayClientMessage(
+                Component.literal("§6⚡ God Dash!"), true);
 
             return InteractionResultHolder.success(stack);
         });
