@@ -54,16 +54,13 @@ public class GodMaceMod implements ModInitializer {
                 boolean holdingMace = isGodMace(player.getMainHandStack());
 
                 if (onCooldown) {
-                    // Always show countdown whether holding mace or not
                     player.sendMessage(
                         Text.literal("§6⚡ God Dash §c" + String.format("%.1f", remainingSec) + "s"),
                         true
                     );
                 } else if (holdingMace) {
-                    // Only show READY if holding the mace
                     player.sendMessage(Text.literal("§6⚡ God Dash §aREADY"), true);
                 }
-                // If not holding mace and no cooldown, show nothing
             }
         });
 
