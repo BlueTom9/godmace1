@@ -2,8 +2,10 @@ package com.godmace;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -31,6 +33,33 @@ public class GodMaceMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+
+        // ── Always show action bar while holding god mace ──
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                ItemStack stack = player.getMainHandStack();
+                if (!isGodMace(stack)) continue;
+
+                long now = player.getServerWorld().getTime();
+                UUID uuid = player.getUuid();
+
+                if (cooldowns.containsKey(uuid)) {
+                    long elapsed = now - cooldowns.get(uuid);
+                    if (elapsed < COOLDOWN_TICKS) {
+                        float remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
+                        player.sendMessage(
+                            Text.literal("§6⚡ God Dash §c" + String.format("%.1f", remainingSec) + "s"),
+                            true
+                        );
+                        continue;
+                    }
+                }
+                // Ready!
+                player.sendMessage(Text.literal("§6⚡ God Dash §aREADY"), true);
+            }
+        });
+
+        // ── Right click to dash ──
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClient()) return ActionResult.PASS;
 
@@ -44,17 +73,13 @@ public class GodMaceMod implements ModInitializer {
             if (cooldowns.containsKey(uuid)) {
                 long elapsed = now - cooldowns.get(uuid);
                 if (elapsed < COOLDOWN_TICKS) {
-                    float remainingSec = (COOLDOWN_TICKS - elapsed) / 20f;
-                    serverPlayer.sendMessage(
-                        Text.literal("§cDash on cooldown! §e" + String.format("%.1f", remainingSec) + "s"),
-                        true
-                    );
                     return ActionResult.FAIL;
                 }
             }
 
             cooldowns.put(uuid, now);
 
+            // Dash
             Vec3d look = player.getRotationVec(1.0f);
             player.setVelocity(
                 look.x * DASH_HORIZONTAL,
@@ -62,6 +87,9 @@ public class GodMaceMod implements ModInitializer {
                 look.z * DASH_HORIZONTAL
             );
             player.velocityDirty = true;
+
+            // Send velocity to client so it actually moves
+            serverPlayer.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player));
 
             ServerWorld serverWorld = (ServerWorld) world;
 
