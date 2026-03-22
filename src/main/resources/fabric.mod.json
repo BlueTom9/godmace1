@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "godmace",
+  "version": "1.0.0",
+  "name": "God Mace",
+  "description": "Right-click dash ability for the God Mace item.",
+  "authors": [ "You" ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [ "com.godmace.GodMaceMod" ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.11"
+  }
+}
