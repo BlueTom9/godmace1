@@ -26,8 +26,9 @@ public class GodMaceMod implements ModInitializer {
 
     private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
-    private static final double DASH_HORIZONTAL = 1.8;
-    private static final double DASH_VERTICAL = 0.4;
+    // Lunge III exact value: 1.374 blocks per tick horizontal
+    private static final double DASH_HORIZONTAL = 1.374;
+    private static final double DASH_VERTICAL = 0.0; // Lunge is purely horizontal
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
 
@@ -84,11 +85,18 @@ public class GodMaceMod implements ModInitializer {
 
             cooldowns.put(uuid, now);
 
+            // Lunge III: purely horizontal, 1.374 blocks/tick in look direction
             Vec3d look = player.getRotationVec(1.0f);
+            // Normalize to horizontal only like vanilla Lunge
+            double hLen = Math.sqrt(look.x * look.x + look.z * look.z);
+            double nx = hLen > 0 ? look.x / hLen : look.x;
+            double nz = hLen > 0 ? look.z / hLen : look.z;
+
+            Vec3d current = player.getVelocity();
             player.setVelocity(
-                look.x * DASH_HORIZONTAL,
-                Math.max(look.y * DASH_HORIZONTAL, DASH_VERTICAL),
-                look.z * DASH_HORIZONTAL
+                current.x + nx * DASH_HORIZONTAL,
+                current.y,
+                current.z + nz * DASH_HORIZONTAL
             );
             player.velocityDirty = true;
 
