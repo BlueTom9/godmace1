@@ -26,8 +26,11 @@ public class GodMaceMod implements ModInitializer {
 
     private static final Identifier GOD_MACE_MODEL = Identifier.of("minecraft", "item/mace/godmace");
     private static final long COOLDOWN_TICKS = 300L;
-    // Lunge III: 1.374 blocks per tick added to existing velocity
+    // Exact Lunge III value from game data: base 0.458 + 0.458 per level above first
+    // Level 3 = 0.458 + (2 * 0.458) = 1.374
     private static final double LUNGE_POWER = 1.374;
+    // Sprint speed added on top like vanilla (player is always sprinting when lunging)
+    private static final double SPRINT_BOOST = 0.28;
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
 
@@ -84,16 +87,17 @@ public class GodMaceMod implements ModInitializer {
 
             cooldowns.put(uuid, now);
 
-            // Exact Lunge III behavior:
-            // Use raw look vector X and Z (not normalized)
-            // so looking down reduces horizontal thrust naturally
-            // Add to existing velocity, cancel vertical component
+            // Exact Lunge III: coordinate_scale [1,0,1] means X and Z of look vector
+            // Y is untouched. Magnitude 1.374 added to existing velocity.
+            // Extra sprint boost added since vanilla Lunge is always used while sprinting.
             Vec3d look = player.getRotationVec(1.0f);
             Vec3d current = player.getVelocity();
+            double totalPower = LUNGE_POWER + SPRINT_BOOST;
+
             player.setVelocity(
-                current.x + look.x * LUNGE_POWER,
-                current.y, // vertical unchanged, like vanilla Lunge
-                current.z + look.z * LUNGE_POWER
+                current.x + look.x * totalPower,
+                current.y,
+                current.z + look.z * totalPower
             );
             player.velocityDirty = true;
 
