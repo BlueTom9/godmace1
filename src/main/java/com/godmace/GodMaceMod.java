@@ -43,7 +43,7 @@ public class GodMaceMod implements ModInitializer {
                 CommandManager.literal("godmace")
                     .requires(source -> {
                         ServerPlayerEntity p = source.getPlayer();
-                        return p != null && source.getServer().getPlayerManager().isOperator(p.getGameProfile());
+                        return p != null && p.hasPermissionLevel(2);
                     })
                     .executes(context -> {
                         ServerCommandSource source = context.getSource();
