@@ -4,12 +4,12 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -18,9 +18,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
-
-import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,16 +41,15 @@ public class GodMaceMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                 CommandManager.literal("godmace")
-                    .requires(source -> source.hasPermissionLevel(2)) // OP only
+                    .requires(source -> source.hasPermission(2))
                     .executes(context -> {
                         ServerCommandSource source = context.getSource();
                         ServerPlayerEntity player = source.getPlayer();
                         if (player == null) return 0;
 
-                        // Run the give command on behalf of the player
                         source.getServer().getCommandManager().executeWithPrefix(
-                            source.getServer().getCommandSource(),
-                            "/give " + player.getName().getString() + " minecraft:mace[minecraft:unbreakable={value:1},minecraft:item_model='minecraft:item/mace/godmace',custom_name={\"text\":\"GOD MACE\",\"color\":\"yellow\",\"bold\":true,\"italic\":false},enchantments={\"minecraft:density\":5,\"minecraft:breach\":4,\"minecraft:wind_burst\":3,\"minecraft:mending\":1,\"minecraft:unbreaking\":3,\"minecraft:fire_aspect\":2}] 1"
+                            source.withSilent(),
+                            "give " + player.getName().getString() + " minecraft:mace[minecraft:unbreakable={value:1},minecraft:item_model='minecraft:item/mace/godmace',custom_name={\"text\":\"GOD MACE\",\"color\":\"yellow\",\"bold\":true,\"italic\":false},enchantments={\"minecraft:density\":5,\"minecraft:breach\":4,\"minecraft:wind_burst\":3,\"minecraft:mending\":1,\"minecraft:unbreaking\":3,\"minecraft:fire_aspect\":2}] 1"
                         );
 
                         player.sendMessage(Text.literal("§6You have been given the §eGOD MACE§6!"), false);
